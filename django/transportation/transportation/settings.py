@@ -26,7 +26,7 @@ SECRET_KEY = 'ygl_2u15nnn24n6!fbciq^=$3%&1irg*=4a#hu1_q_v8776meq'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*',]
 
 # Global information
 graph = Graph()
