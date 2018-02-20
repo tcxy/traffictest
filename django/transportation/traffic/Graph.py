@@ -48,10 +48,24 @@ class Graph(object):
             self.__edges = []
             self.__points = 0
             self.__vertex_dict = {}
+            self.__edges_dict = []
         else:
             graph_dict = json.loads(graph_dict)
             self.__vertices = graph_dict['vertices']
             self.__edges = graph_dict['edges']
+            self.__vertex_dict = {}
+            self.__edges_dict = []
+            self.__points = 0
+            self.build_vertex_dict()
+
+    def build_vertex_dict(self):
+        for vertice in self.__vertices:
+            self.__vertex_dict[self.__points] = vertice
+            self.__points = self.__points + 1
+        # for edge in self.__edges:
+        #     edge['from_vertice'] = self.nearest_point(edge['from_vertice'][1], edge['from_vertice'][0])
+        #     edge['to_vertice'] = self.nearest_point(edge['to_vertice'][1], edge['to_vertice'][0])
+        #     self.__edges_dict.append(edge)
 
     def add_vertex(self, vertice=None):
         if not vertice == None and vertice.get_location() not in self.__vertices:
@@ -165,8 +179,9 @@ class Graph(object):
         lat = self.__vertex_dict[from_vertice][1]
         edges = []
         for edge in self.__edges:
-            from_vertice = self.__vertex_dict[edge["from_vertice"]]
-            if (from_vertice[0] == lng and from_vertice[1] == lat):
+            from_vertice = self.__vertex_dict[self.num_of_point(edge['from_vertice'][1], edge['from_vertice'][0])]
+            to_vertice = self.__vertex_dict[self.num_of_point(edge['to_vertice'][1], edge['to_vertice'][0])]
+            if ((to_vertice[0] == lng and from_vertice[1] == lat)) or (from_vertice[0] == lng and from_vertice[1] == lat):
                 edges.append(edge)
 
         return edges
@@ -181,6 +196,10 @@ class Graph(object):
         for key, coor in self.__vertex_dict.items():
             if key == num:
                 return coor
+    def num_of_point(self, lat, lng):
+        for key, coor in self.__vertex_dict.items():
+            if lat == coor[1] and lng == coor[0]:
+                return key
 
     def same_point(self, lat1, lon1, lat2, lon2):
         dis = self.haversine(lat1, lon1, lat2, lon2)
@@ -192,3 +211,13 @@ class Graph(object):
 
     def get_point_num(self):
         return len(self.__vertex_dict)
+
+    def nearest_point(self, lat, lng):
+        nearest = 0
+        mindis = float('inf')
+        for num, vertex in self.__vertex_dict.items():
+            dis = self.haversine(lat, lng, vertex[1], vertex[0])
+            if dis < mindis:
+                mindis = dis
+                nearest = num
+        return nearest

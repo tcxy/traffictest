@@ -13,6 +13,10 @@ from django.conf import settings
 # Create your views here.
 # Get to the index page
 def index(request):
+    filepath = os.path.abspath('./traffic/Data/model.json')
+    with open(filepath, 'r') as model:
+        graph = Graph(model.read())
+        settings.graph = graph
     return render(request, 'map.html')
 
 def get_points(request):
@@ -30,7 +34,7 @@ def get_points(request):
 # Get all the red path in the map
 def red(request):
     red = []
-    for edge in settings.graph.get_detailed_edges():
+    for edge in settings.graph.get_edges():
         if float(edge['speed']) < 0.4:
             red.append(edge)
     return HttpResponse(json.dumps(red));
@@ -38,18 +42,15 @@ def red(request):
 # Get all the green path in the map
 def green(request):
     green = []
-    with open('C:/Users/new user/Dropbox/La Crosse/Traffic/Project/Data Module/model.json', 'r') as f:
-        json_data = json.loads(f.read())
-        edges = json_data['edges']
-        for edge in edges:
-            if float(edge['speed']) > 0.8:
-                green.append(edge)
+    for edge in settings.graph.get_edges():
+        if float(edge['speed']) > 0.8:
+            green.append(edge)
     return HttpResponse(json.dumps(green));
 
 # Get all the yellow path in the map
 def yellow(request):
     yellow = []
-    for edge in settings.graph.get_detailed_edges():
+    for edge in settings.graph.get_edges():
         if float(edge['speed']) > 0.4 and float(edge['speed']) < 0.8:
             yellow.append(edge)
     return HttpResponse(json.dumps(yellow));
@@ -119,7 +120,7 @@ def dijkstra(graph, departure, destination):
         for edge in graph.get_edges_from_point(v):
             print(edge)
             candidate_weight = distances[v] + float(edge['dis']) * float(edge['speed'])
-            to_vertice = int(edge["to_vertice"])
+            to_vertice = graph.num_of_point(edge['to_vertice'][1], edge['to_vertice'][0])
             if distances[to_vertice] > candidate_weight:
                 distances[to_vertice] = candidate_weight
                 parents[to_vertice] = v
@@ -147,24 +148,28 @@ def dijkstra(graph, departure, destination):
 # Return the list of path which from depart to dest
 def navigate(request):
     if request.method == 'POST':
-        print('navigate function start')
-        depart_lat = request.POST.get('depart_lat')
-        depart_lng = request.POST.get('depart_lng')
-        dest_lat = request.POST.get('dest_lat')
-        dest_lng = request.POST.get('dest_lng')
-        print('tries to build graph')
-        graph = getGraph()
-        depart = graph.point_in_graph(depart_lat, depart_lng)
-        dest = graph.point_in_graph(dest_lat, dest_lng)
-        print('find shortest path')
-        path = dijkstra(graph, depart, dest)
-        coordinate_path = []
-        for point in path:
-            coordinate = graph.coor_from_num(point)
-            coordinate_path.append(coordinate)
+        filepath = os.path.abspath('./traffic/Data/model.json')
+        with open(filepath, 'r') as model:
+            graph = Graph(model.read())
+            print('navigate function start')
+            depart_lat = request.POST.get('depart_lat')
+            depart_lng = request.POST.get('depart_lng')
+            dest_lat = request.POST.get('dest_lat')
+            dest_lng = request.POST.get('dest_lng')
+            print('tries to build graph')
+            depart = graph.nearest_point(depart_lat, depart_lng)
+            print('depart is : ' + str(depart))
+            dest = graph.nearest_point(dest_lat, dest_lng)
+            print('dest is: ' + str(dest))
+            print('find shortest path')
+            path = dijkstra(graph, depart, dest)
+            coordinate_path = []
+            for point in path:
+                coordinate = graph.coor_from_num(point)
+                coordinate_path.append(coordinate)
 
-        print(coordinate_path)
+            print(coordinate_path)
 
-        return HttpResponse(json.dumps({
-            "path": coordinate_path
-        }))
+            return HttpResponse(json.dumps({
+                "path": coordinate_path
+            }))

@@ -155,80 +155,82 @@
             map.addListener('click', function(event) {
                if (addDeparture) {
                    placeDeparture(event.latLng);
+                   console.log(event.latLng);
                    addDeparture = false;
                } else if (addDestination) {
                    placeDestination(event.latLng);
+                   console.log(event.latLng);
                    addDestination = false;
                }
             });
 
 
-        //     $.getJSON('/red', function (json) {
-        //     $.each(json, function (i, n) {
-        //         var redline = [
-        //             {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //             {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //         ]
-        //         var redpath = new google.maps.Polyline({
-        //             path: redline,
-        //             geodesic: true,
-        //             strokeColor: '#FF0000',
-        //             strokeOpacity: 1.0,
-        //             strokeWeight: 2
-        //         });
-        //         redpath.setMap(map);
-        //     })
-        // });
-        //
-        // $.getJSON('/green', function (json) {
-        //         $.each(json, function (i, n) {
-        //             var greenline = [
-        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //             ]
-        //             var greenpath = new google.maps.Polyline({
-        //                 path: greenline,
-        //                 geodesic: true,
-        //                 strokeColor: '#00FF00',
-        //                 strokeOpacity: 1.0,
-        //                 strokeWeight: 2
-        //             });
-        //             greenpath.setMap(map);
-        //         })
-        //     });
-        //
-        //
-        //
-        // $.getJSON('/yellow', function (json) {
-        //         $.each(json, function (i, n) {
-        //             var yellowline = [
-        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //             ]
-        //             var yellowpath = new google.maps.Polyline({
-        //                 path: yellowline,
-        //                 geodesic: true,
-        //                 strokeColor: '#FFFF00',
-        //                 strokeOpacity: 1.0,
-        //                 strokeWeight: 2
-        //             });
-        //             yellowpath.setMap(map);
-        //         })
-        //     });
-
-        $.getJSON('/points', function (json) {
-            console.log(json);
+            $.getJSON('/red', function (json) {
             $.each(json, function (i, n) {
-                var point = {lat: parseFloat(n[1]), lng: parseFloat(n[0])};
-                var mark = new google.maps.Marker({
-                    position: point,
-                    map: map
-                })
-                google.maps.event.addListener(mark, 'click', function() {
-                    console.log('lat : ' + n[1] + ', lng : ' + n[0]);
+                var redline = [
+                    {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+                    {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+                ]
+                var redpath = new google.maps.Polyline({
+                    path: redline,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
                 });
+                redpath.setMap(map);
+            })
+        });
+
+        $.getJSON('/green', function (json) {
+                $.each(json, function (i, n) {
+                    var greenline = [
+                        {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+                        {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+                    ]
+                    var greenpath = new google.maps.Polyline({
+                        path: greenline,
+                        geodesic: true,
+                        strokeColor: '#00FF00',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+                    greenpath.setMap(map);
+                })
             });
-        })
+
+
+
+        $.getJSON('/yellow', function (json) {
+                $.each(json, function (i, n) {
+                    var yellowline = [
+                        {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+                        {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+                    ]
+                    var yellowpath = new google.maps.Polyline({
+                        path: yellowline,
+                        geodesic: true,
+                        strokeColor: '#FFFF00',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+                    yellowpath.setMap(map);
+                })
+            });
+
+        // $.getJSON('/points', function (json) {
+        //     console.log(json);
+        //     $.each(json, function (i, n) {
+        //         var point = {lat: parseFloat(n[1]), lng: parseFloat(n[0])};
+        //         var mark = new google.maps.Marker({
+        //             position: point,
+        //             map: map
+        //         })
+        //         google.maps.event.addListener(mark, 'click', function() {
+        //             console.log('lat : ' + n[1] + ', lng : ' + n[0]);
+        //         });
+        //     });
+        // });
         }
 
         function placeDeparture(location) {
@@ -261,6 +263,8 @@
                 "dest_lat": destinationMarker.getPosition().lat(),
                 "dest_lng": destinationMarker.getPosition().lng()
             };
+            console.log("depart: " + departureMarker.getPosition().lat() + ", " + departureMarker.getPosition().lng());
+            console.log("dest: " + destinationMarker.getPosition().lat() + ", " + destinationMarker.getPosition().lng());
 
             $.post('/navigate', post_data, function(data) {
                 var data = JSON.parse(data);
