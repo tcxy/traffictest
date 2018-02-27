@@ -3,6 +3,7 @@
 import json
 
 from math import radians, cos, sin, asin, sqrt
+from numpy import *
 from traffic.GEO import GEO
 
 class Vertice(object):
@@ -19,7 +20,7 @@ class Vertice(object):
 
 class Edge(object):
 
-    def __init__(self, from_vertice=None, to_vertice=None, speed=0, name='', dis=0):
+    def __init__(self, from_vertice=None, to_vertice=None, speed=0, name='', dis=0, id=0):
         if from_vertice == None:
             self.__from_vertice = -1
         else:
@@ -31,13 +32,14 @@ class Edge(object):
         self.__speed = speed
         self.__name = name
         self.__dis = dis
+        self.__id = id
 
     def __str__(self):
         return "from " + str(self.__from_vertice) + " to " . str(self.__to_vertice) + ", the speed is " + str(self.__speed)
 
     def get_edge(self):
         return {'name': self.__name, 'from_vertice': self.__from_vertice, 'to_vertice': self.__to_vertice,
-                'speed': self.__speed, 'dis': self.__dis}
+                'speed': self.__speed, 'dis': self.__dis, 'id': self.__id}
 
 class Graph(object):
 
@@ -50,22 +52,32 @@ class Graph(object):
             self.__vertex_dict = {}
             self.__edges_dict = []
         else:
-            graph_dict = json.loads(graph_dict)
             self.__vertices = graph_dict['vertices']
             self.__edges = graph_dict['edges']
             self.__vertex_dict = {}
             self.__edges_dict = []
             self.__points = 0
-            self.build_vertex_dict()
+            self.build_matrix()
 
-    def build_vertex_dict(self):
+    def build_matrix(self):
         for vertice in self.__vertices:
-            self.__vertex_dict[self.__points] = vertice
-            self.__points = self.__points + 1
-        # for edge in self.__edges:
-        #     edge['from_vertice'] = self.nearest_point(edge['from_vertice'][1], edge['from_vertice'][0])
-        #     edge['to_vertice'] = self.nearest_point(edge['to_vertice'][1], edge['to_vertice'][0])
-        #     self.__edges_dict.append(edge)
+            self.__points += 1
+        print('The total points are: ' + str(self.__points))
+        self.__matrix = [0] * self.__points
+        for i in range(self.__points):
+            self.__matrix[i] = [float('inf')] * self.__points
+        count = 0
+        for edge in self.__edges:
+            row = int(edge['from_vertice'])
+            col = int(edge['to_vertice'])
+            self.__matrix[row][col] = float(edge['dis']) / float(edge['speed'])
+            self.__matrix[col][row] = float(edge['dis']) / float(edge['speed'])
+            print('From point ' + str(row) + ' to point ' + str(col))
+            print('The weight is ' + str(float(edge['dis']) / float(edge['speed'])))
+            count += 1
+        print('The total segments are: ' + str(count))
+
+
 
     def add_vertex(self, vertice=None):
         if not vertice == None and vertice.get_location() not in self.__vertices:
@@ -157,7 +169,7 @@ class Graph(object):
 
 
     def get_vertex(self):
-        return self.__vertex_dict
+        return self.__vertices
 
     def get_edges(self):
         return self.__edges
@@ -175,14 +187,10 @@ class Graph(object):
         return return_edges
 
     def get_edges_from_point(self, from_vertice):
-        lng = self.__vertex_dict[from_vertice][0]
-        lat = self.__vertex_dict[from_vertice][1]
         edges = []
-        for edge in self.__edges:
-            from_vertice = self.__vertex_dict[self.num_of_point(edge['from_vertice'][1], edge['from_vertice'][0])]
-            to_vertice = self.__vertex_dict[self.num_of_point(edge['to_vertice'][1], edge['to_vertice'][0])]
-            if ((to_vertice[0] == lng and from_vertice[1] == lat)) or (from_vertice[0] == lng and from_vertice[1] == lat):
-                edges.append(edge)
+        for num, weight in enumerate(self.__matrix[from_vertice]):
+            if not weight == float('inf'):
+                edges.append([num, weight])
 
         return edges
 
@@ -193,9 +201,8 @@ class Graph(object):
                 return num
 
     def coor_from_num(self, num):
-        for key, coor in self.__vertex_dict.items():
-            if key == num:
-                return coor
+        return self.__vertices[str(num)]
+
     def num_of_point(self, lat, lng):
         for key, coor in self.__vertex_dict.items():
             if lat == coor[1] and lng == coor[0]:
@@ -215,9 +222,20 @@ class Graph(object):
     def nearest_point(self, lat, lng):
         nearest = 0
         mindis = float('inf')
-        for num, vertex in self.__vertex_dict.items():
+        for num, vertex in self.__vertices.items():
             dis = self.haversine(lat, lng, vertex[1], vertex[0])
             if dis < mindis:
                 mindis = dis
                 nearest = num
-        return nearest
+        return int(nearest)
+
+    def get_edge_by_coor(self, from_vertex, to_vertex):
+        from_vertex = int(from_vertex)
+        to_vertex = int(to_vertex)
+        for index, edge in enumerate(self.__edges):
+            f = int(edge['from_vertice'])
+            v = int(edge['to_vertice'])
+            if f == from_vertex and v == to_vertex:
+                return index
+            elif f == to_vertex and v == from_vertex:
+                return index

@@ -23,6 +23,7 @@
         var addDestination = false;
         var departureMarker;
         var destinationMarker;
+        var polylines = Array();
 
         /**
          * 添加自定义的控件，该控件的主要作用是允许用户添加起始地点
@@ -37,7 +38,7 @@
             controlUI.style.cursor = 'pointer';
             controlUI.style.marginBottom = '22px';
             controlUI.style.textAlign = 'center';
-            controlUI.title = '点击此按钮之后再点击地图即可添加出发地点';
+            controlUI.title = 'Click this button then choose departure point';
             controlDiv.appendChild(controlUI);
 
             // 设置控件的内部样式
@@ -49,7 +50,7 @@
             depatureText.style.paddingLeft = '5px';
             depatureText.style.paddingRight = '5px';
             depatureText.style.borderBottom = '1px solid #000';
-            depatureText.innerHTML = '出发地点';
+            depatureText.innerHTML = 'Departure';
             controlUI.appendChild(depatureText);
 
             var destinationText = document.createElement('div');
@@ -60,7 +61,7 @@
             destinationText.style.paddingLeft = '5px';
             destinationText.style.paddingRight = '5px';
             destinationText.style.borderBottom = '1px solid #000';
-            destinationText.innerHTML = '目的地';
+            destinationText.innerHTML = 'Destination';
             controlUI.appendChild(destinationText);
 
             var navigation = document.createElement('div');
@@ -70,7 +71,7 @@
             navigation.style.lineHeight = '38px';
             navigation.style.paddingLeft = '5px';
             navigation.style.paddingRight = '5px';
-            navigation.innerHTML = '出发';
+            navigation.innerHTML = 'Navigate';
             controlUI.appendChild(navigation);
 
             // 为该按钮设置点击事件
@@ -93,35 +94,6 @@
             });
         }
 
-        function getNewDestination() {
-            var post_data = {
-                "lat": destinationMarker.getPosition().lat(),
-                "lng": destinationMarker.getPosition().lng()
-            };
-
-            $.post('/departure', post_data, function(data) {
-                var data = JSON.parse(data);
-                var point = data['point'];
-                destinationMarker.setMap(null);
-                destinationMarker.setPosition({lat: 41.83834404, lng: -87.62363669});
-                destinationMarker.setMap(map);
-            });
-        }
-
-        function getNewDeparture() {
-            var post_data = {
-                "lat": departureMarker.getPosition().lat(),
-                "lng": departureMarker.getPosition().lng()
-            };
-
-            $.post('/departure', post_data, function(data) {
-                var data = JSON.parse(data);
-                var point = data['point'];
-                departureMarker.setMap(null);
-                departureMarker.setPosition({lat: 41.86745208, lng: -87.62442868});
-                departureMarker.setMap(map);
-            });
-        }
 
         function initMap() {
            map = new google.maps.Map(document.getElementById('map'), {
@@ -165,57 +137,93 @@
             });
 
 
-            $.getJSON('/red', function (json) {
-            $.each(json, function (i, n) {
-                var redline = [
-                    {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-                    {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-                ]
-                var redpath = new google.maps.Polyline({
-                    path: redline,
-                    geodesic: true,
-                    strokeColor: '#FF0000',
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2
+        //     $.getJSON('/red', function (json) {
+        //     $.each(json, function (i, n) {
+        //         var redline = [
+        //             {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+        //             {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+        //         ]
+        //         var redpath = new google.maps.Polyline({
+        //             path: redline,
+        //             geodesic: true,
+        //             strokeColor: '#FF0000',
+        //             strokeOpacity: 1.0,
+        //             strokeWeight: 2
+        //         });
+        //         redpath.setMap(map);
+        //     })
+        // });
+        //
+        // $.getJSON('/green', function (json) {
+        //         $.each(json, function (i, n) {
+        //             var greenline = [
+        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+        //             ]
+        //             var greenpath = new google.maps.Polyline({
+        //                 path: greenline,
+        //                 geodesic: true,
+        //                 strokeColor: '#00FF00',
+        //                 strokeOpacity: 1.0,
+        //                 strokeWeight: 2
+        //             });
+        //             greenpath.setMap(map);
+        //         })
+        //     });
+        //
+        //
+        //
+        // $.getJSON('/yellow', function (json) {
+        //         $.each(json, function (i, n) {
+        //             var yellowline = [
+        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+        //             ]
+        //             var yellowpath = new google.maps.Polyline({
+        //                 path: yellowline,
+        //                 geodesic: true,
+        //                 strokeColor: '#FFFF00',
+        //                 strokeOpacity: 1.0,
+        //                 strokeWeight: 2
+        //             });
+        //             yellowpath.setMap(map);
+        //         })
+        //     });
+
+            // Request edges from the server and then change their color
+            $.getJSON('/edges', function (json) {
+                $.each(json, function (i, n) {
+                    var polyline = [
+                        {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
+                        {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
+                    ];
+                    var polypath = new google.maps.Polyline({
+                        path: polyline,
+                        geodesic: true,
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    });
+                    if (parseFloat(n['speed']) < 0.4) {
+                        polypath.setValues({
+                           strokeColor: '#FF0000'
+                        });
+                    } else if (parseFloat(n['speed']) < 0.8) {
+                        polypath.setValues({
+                           strokeColor:  '#FFFF00'
+                        });
+                    } else {
+                        polypath.setValues({
+                           strokeColor:  '#00FF00',
+                        });
+                    }
+                    polypath.edgeid = n['id'];
+                    polypath.addListener('click', function () {
+                        alert(this.edgeid);
+                    });
+                    polypath.setMap(map);
+                    polypath.points = polyline;
+                    polylines.push(polypath);
                 });
-                redpath.setMap(map);
-            })
-        });
-
-        $.getJSON('/green', function (json) {
-                $.each(json, function (i, n) {
-                    var greenline = [
-                        {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-                        {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-                    ]
-                    var greenpath = new google.maps.Polyline({
-                        path: greenline,
-                        geodesic: true,
-                        strokeColor: '#00FF00',
-                        strokeOpacity: 1.0,
-                        strokeWeight: 2
-                    });
-                    greenpath.setMap(map);
-                })
-            });
-
-
-
-        $.getJSON('/yellow', function (json) {
-                $.each(json, function (i, n) {
-                    var yellowline = [
-                        {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-                        {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-                    ]
-                    var yellowpath = new google.maps.Polyline({
-                        path: yellowline,
-                        geodesic: true,
-                        strokeColor: '#FFFF00',
-                        strokeOpacity: 1.0,
-                        strokeWeight: 2
-                    });
-                    yellowpath.setMap(map);
-                })
             });
 
         // $.getJSON('/points', function (json) {
@@ -272,22 +280,35 @@
                 console.log(path)
                 var blackline = [];
                 $.each(path, function (index, value) {
-                   var coor = path[index];
-                   blackline.push({lat: parseFloat(coor[1]), lng: parseFloat(coor[0])});
-                    console.log(coor)
+                    console.log(value);
+                    polylines[value].setValues({strokeColor:  '#000000'});
+                    // var blackline = [
+                    //     {lat: parseFloat(value[0][1]), lng: parseFloat(value[0][0])},
+                    //     {lat: parseFloat(value[1][1]), lng: parseFloat(value[1][0])}
+                    // ]
+                    // var blackpath = new google.maps.Polyline({
+                    //     path: blackline,
+                    //     geodesic: true,
+                    //     strokeColor: '#000000',
+                    //     strokeOpacity: 1.0,
+                    //     strokeWeight: 2
+                    // });
+                    // blackpath.setMap(map);
                 });
-                var blackpath = new google.maps.Polyline({
-                    path: blackline,
-                    geodesic: true,
-                    strokeColor: '#000000',
-                    strokeOpacity: 1.0,
-                    strokeWeight: 2
-                });
-                blackpath.setMap(map);
-
             });
 
         }
+
+        function changeColorOfPath(from_point, to_point) {
+            $.each(polylines, function (i, n) {
+               var points = n.points;
+               if (parseFloat(points[0]['lat']) == parseFloat(from_point[1]) && parseFloat(points[0]['lng']) == parseFloat(from_point[0])
+                && parseFloat(points[1]['lat']) == parseFloat(to_point[1]) && parseFloat(points[1]['lat']) == parseFloat(to_point[0])) {
+                   n.setValues({ strokeColor:  '#000000'});
+               }
+            });
+        }
+
 
         $.ajaxSetup({
             beforeSend: function(xhr, settings) {

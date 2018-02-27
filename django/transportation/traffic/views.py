@@ -13,11 +13,24 @@ from django.conf import settings
 # Create your views here.
 # Get to the index page
 def index(request):
-    filepath = os.path.abspath('./traffic/Data/model.json')
+    filepath = os.path.abspath('./traffic/Data/new_model.json')
     with open(filepath, 'r') as model:
-        graph = Graph(model.read())
+        json_data = json.loads(model.read())
+        print(json_data['vertices']['1'])
+        graph = Graph(json_data)
         settings.graph = graph
     return render(request, 'map.html')
+
+def get_edges(request):
+    edges = []  # stores all the edges
+    for edge in settings.graph.get_edges():
+        # transfer the from vertex and to vertex from numbers into coordinates
+        from_vertex = settings.graph.coor_from_num(edge['from_vertice'])
+        to_vertex = settings.graph.coor_from_num(edge['to_vertice'])
+        # each edge will return several information
+        edges.append(Edge(from_vertex, to_vertex, edge['speed'], edge['name'], edge['dis'], edge['id']).get_edge())
+    return HttpResponse(json.dumps(edges))
+
 
 def get_points(request):
     filepath = os.path.abspath('./traffic/Data/inter_model.json')
@@ -36,7 +49,9 @@ def red(request):
     red = []
     for edge in settings.graph.get_edges():
         if float(edge['speed']) < 0.4:
-            red.append(edge)
+            from_vertex = settings.graph.coor_from_num(edge['from_vertice'])
+            to_vertex = settings.graph.coor_from_num(edge['to_vertice'])
+            red.append(Edge(from_vertex, to_vertex, edge['speed'], edge['name'], edge['dis'], edge['id']).get_edge())
     return HttpResponse(json.dumps(red));
 
 # Get all the green path in the map
@@ -44,7 +59,9 @@ def green(request):
     green = []
     for edge in settings.graph.get_edges():
         if float(edge['speed']) > 0.8:
-            green.append(edge)
+            from_vertex = settings.graph.coor_from_num(edge['from_vertice'])
+            to_vertex = settings.graph.coor_from_num(edge['to_vertice'])
+            green.append(Edge(from_vertex, to_vertex, edge['speed'], edge['name'], edge['dis'], edge['id']).get_edge())
     return HttpResponse(json.dumps(green));
 
 # Get all the yellow path in the map
@@ -52,7 +69,9 @@ def yellow(request):
     yellow = []
     for edge in settings.graph.get_edges():
         if float(edge['speed']) > 0.4 and float(edge['speed']) < 0.8:
-            yellow.append(edge)
+            from_vertex = settings.graph.coor_from_num(edge['from_vertice'])
+            to_vertex = settings.graph.coor_from_num(edge['to_vertice'])
+            yellow.append(Edge(from_vertex, to_vertex, edge['speed'], edge['name'], edge['dis'], edge['id']).get_edge())
     return HttpResponse(json.dumps(yellow));
 
 # Retrieve graph from local file
@@ -104,6 +123,7 @@ def dijkstra(graph, departure, destination):
 
     for num in graph.get_vertex():
         weight = start_weight
+        num = int(num)
         if departure == num:
             weight = 0.0
         distances[num] = weight
@@ -113,14 +133,17 @@ def dijkstra(graph, departure, destination):
 
     while not q.empty():
         v_tuple = q.get()
-        v = v_tuple[1]
+        v = int(v_tuple[1])
         print("v is ")
         print(v)
 
         for edge in graph.get_edges_from_point(v):
+            # for each edge, the first element to to vertice, the second element is weight
             print(edge)
-            candidate_weight = distances[v] + float(edge['dis']) * float(edge['speed'])
-            to_vertice = graph.num_of_point(edge['to_vertice'][1], edge['to_vertice'][0])
+            to_vertice = int(edge[0])
+            weight = edge[1]
+            candidate_weight = distances[v] + float(weight)
+            to_vertice = int(to_vertice)
             if distances[to_vertice] > candidate_weight:
                 distances[to_vertice] = candidate_weight
                 parents[to_vertice] = v
@@ -150,7 +173,7 @@ def navigate(request):
     if request.method == 'POST':
         filepath = os.path.abspath('./traffic/Data/model.json')
         with open(filepath, 'r') as model:
-            graph = Graph(model.read())
+            graph = settings.graph
             print('navigate function start')
             depart_lat = request.POST.get('depart_lat')
             depart_lng = request.POST.get('depart_lng')
@@ -163,13 +186,15 @@ def navigate(request):
             print('dest is: ' + str(dest))
             print('find shortest path')
             path = dijkstra(graph, depart, dest)
-            coordinate_path = []
-            for point in path:
-                coordinate = graph.coor_from_num(point)
-                coordinate_path.append(coordinate)
-
-            print(coordinate_path)
+            print('path: ' + str(path))
+            # coordinate_path = []
+            # for point in path:
+            #     coordinate = graph.coor_from_num(point)
+            #     coordinate_path.append(coordinate)
+            edges = []
+            for i in range(len(path) - 1):
+                edges.append(graph.get_edge_by_coor(path[i], path[i+1]))
 
             return HttpResponse(json.dumps({
-                "path": coordinate_path
+                "path": edges
             }))
