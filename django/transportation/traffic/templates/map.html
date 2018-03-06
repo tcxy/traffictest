@@ -6,11 +6,52 @@
     <style type="text/css">
         html, body { height: 100%; margin: 0; padding: 0 }
         #map { height: 100% }
+
+        .black_overlay {
+            display: none;
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 80%;
+            heigh: 80%;
+            background-color: black;
+            z-index: 1001;
+            -moz-opacity: 0.8;
+            opacity: .80;
+            filter: alpha(opacity=88);
+        }
+
+        .white_content {
+            display: none;
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 60%;
+            height: 60%;
+            padding: 20px;
+            border: 10px solid orange;
+            background-color: white;
+            z-index: 1002;
+            overflow: auto;
+        }
     </style>
 
 </head>
 <body>
     <div id="map"></div>
+    <div id="light" class="white_content">
+        <form id="analyze_form" method="post">
+            {% csrf_token %}
+            <label>Week</label>
+            <input name="week" id="week">
+            <label>Day</label>
+            <input name="day" id="day">
+            <button type="button" onclick="startAnalyze()">Submit</button>
+            <button type="button" onclick="closeDialog()">Close</button>
+            <img hidden="hidden" id="image">
+        </form>
+    </div>
+    <div id="fade" class="black_overlay"></div>
     {% csrf_token %}
     <script
   src="https://code.jquery.com/jquery-3.2.1.min.js"
@@ -24,6 +65,18 @@
         var departureMarker;
         var destinationMarker;
         var polylines = Array();
+
+        /**
+         *  Functions for showing dialog
+         */
+        function openDialog(){
+            document.getElementById('light').style.display='block';
+            document.getElementById('fade').style.display='block'
+        }
+        function closeDialog(){
+            document.getElementById('light').style.display='none';
+            document.getElementById('fade').style.display='none'
+        }
 
         /**
          * 添加自定义的控件，该控件的主要作用是允许用户添加起始地点
@@ -94,6 +147,67 @@
             });
         }
 
+        function centerTopControl(controlDiv, map) {
+            // Set CSS for the control border
+            var controlUI = document.createElement('div');
+            controlUI.style.backgroundColor = '#fff';
+            controlUI.style.border = '2px solid #fff';
+            controlUI.style.borderRadius = '3px';
+            controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+            controlUI.style.cursor = 'pointer';
+            controlUI.style.marginBottom = '22px';
+            controlUI.style.textAlign = 'center';
+            controlUI.title = 'Click this button, then choose one street to start analyze';
+            controlDiv.appendChild(controlUI);
+
+            // set CSS for the control interior
+            var controlText = document.createElement('div');
+            controlText.style.color = 'rgb(25,25,25)';
+            controlText.style.fontFamily = 'Robot, Arial, sans-serif';
+            controlText.style.fontSize = '16px';
+            controlText.style.lineHeight = '38px';
+            controlText.paddingLeft = '5px';
+            controlText.paddingRight = '5px';
+            controlText.innerHTML = 'Analyze';
+            controlUI.appendChild(controlText);
+
+            // Setup the click event listeners
+            controlUI.addEventListener('click', function() {
+                openDialog();
+            });
+        }
+
+        function startAnalyze() {
+          var form = $('analyze_form');
+          form.submit(function (e) {
+              e.preventDefault(e);
+          });
+          // console.log('week');
+          // console.log();
+          var data = {}
+          if ($('#week').val()) {
+              data['week'] = $('#week').val();
+              data['type'] = 'week';
+          } else if ($('#day').val()) {
+              data['day'] = $('#day').val();
+              data['type'] = 'day';
+          }
+          console.log(data);
+          $.ajax({
+              url: '/image',
+              type: 'post',
+              data: data,
+              error: function(e) {
+                  console.log(e);
+              },
+              success: function(data) {
+                  var image = $('#image');
+                  image.url = data['url'];
+                  image.hidden = false;
+              }
+           });
+        }
+
 
         function initMap() {
            map = new google.maps.Map(document.getElementById('map'), {
@@ -120,8 +234,17 @@
             var rightControlDiv = document.createElement('div');
             var rightControl = new addButtons(rightControlDiv, map);
 
+            var centerControlDiv = document.createElement('div');
+            var centerControl = new centerTopControl(centerControlDiv, map);
+
+            centerControlDiv.index = 1;
+            map.controls[google.maps.ControlPosition.TOP_CENTER].push(centerControlDiv);
+
             rightControlDiv.index = 1;
             map.controls[google.maps.ControlPosition.TOP_RIGHT].push(rightControlDiv);
+
+            // Add top controller
+
 
             // 为地图添加点击事件
             map.addListener('click', function(event) {
@@ -135,60 +258,6 @@
                    addDestination = false;
                }
             });
-
-
-        //     $.getJSON('/red', function (json) {
-        //     $.each(json, function (i, n) {
-        //         var redline = [
-        //             {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //             {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //         ]
-        //         var redpath = new google.maps.Polyline({
-        //             path: redline,
-        //             geodesic: true,
-        //             strokeColor: '#FF0000',
-        //             strokeOpacity: 1.0,
-        //             strokeWeight: 2
-        //         });
-        //         redpath.setMap(map);
-        //     })
-        // });
-        //
-        // $.getJSON('/green', function (json) {
-        //         $.each(json, function (i, n) {
-        //             var greenline = [
-        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //             ]
-        //             var greenpath = new google.maps.Polyline({
-        //                 path: greenline,
-        //                 geodesic: true,
-        //                 strokeColor: '#00FF00',
-        //                 strokeOpacity: 1.0,
-        //                 strokeWeight: 2
-        //             });
-        //             greenpath.setMap(map);
-        //         })
-        //     });
-        //
-        //
-        //
-        // $.getJSON('/yellow', function (json) {
-        //         $.each(json, function (i, n) {
-        //             var yellowline = [
-        //                 {lat: parseFloat(n['from_vertice'][1]), lng: parseFloat(n['from_vertice'][0])},
-        //                 {lat: parseFloat(n['to_vertice'][1]), lng: parseFloat(n['to_vertice'][0])}
-        //             ]
-        //             var yellowpath = new google.maps.Polyline({
-        //                 path: yellowline,
-        //                 geodesic: true,
-        //                 strokeColor: '#FFFF00',
-        //                 strokeOpacity: 1.0,
-        //                 strokeWeight: 2
-        //             });
-        //             yellowpath.setMap(map);
-        //         })
-        //     });
 
             // Request edges from the server and then change their color
             $.getJSON('/edges', function (json) {
@@ -226,19 +295,6 @@
                 });
             });
 
-        // $.getJSON('/points', function (json) {
-        //     console.log(json);
-        //     $.each(json, function (i, n) {
-        //         var point = {lat: parseFloat(n[1]), lng: parseFloat(n[0])};
-        //         var mark = new google.maps.Marker({
-        //             position: point,
-        //             map: map
-        //         })
-        //         google.maps.event.addListener(mark, 'click', function() {
-        //             console.log('lat : ' + n[1] + ', lng : ' + n[0]);
-        //         });
-        //     });
-        // });
         }
 
         function placeDeparture(location) {

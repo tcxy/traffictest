@@ -3,13 +3,20 @@ import json
 import queue
 import os
 from math import *
+import pymysql
+import matplotlib.pyplot as plt
 from django.http import HttpResponse
 from traffic.Graph import Graph, Edge, Vertice
 from traffic.GEO import GEO
+from traffic.DrawPlot import DrawPlot
 from geopy.distance import vincenty
 from collections import defaultdict, deque
 from django.conf import settings
-
+from matplotlib import pylab
+from pylab import figure, axes, pie, title
+from matplotlib.backends.backend_agg import  FigureCanvasAgg
+import PIL, PIL.Image
+from io import StringIO
 # Create your views here.
 # Get to the index page
 def index(request):
@@ -198,3 +205,65 @@ def navigate(request):
             return HttpResponse(json.dumps({
                 "path": edges
             }))
+
+# generate analyze graph
+def get_image(request):
+    id = request.POST.get('id')
+    type = request.POST.get('type')
+    sql = ''
+    data = 0
+    if not id:
+        id = 1269
+    if type == 'week':
+        data = request.POST.get('week')
+        sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour from traffic
+                WHERE street_id = %d and WEEK(traffic_time) = %d GROUP BY hour''' % (id, int(data))
+    if type == 'day':
+        data = request.POST.get('day')
+        sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour FROM traffic
+                WHERE strrt_id = %id and WEEK(traffic_time) = %d GROUP BY hour''' % (id, int(data))
+    print('id')
+    print(id)
+    print('data')
+    print(data)
+
+    db = pymysql.connect('localhost', 'root', '123456', 'traffic')
+    cursor = db.cursor()
+    x = []
+    y = []
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchall()
+
+        print('plot')
+        for item in result:
+            x.append(item[1])
+            y.append(item[0])
+        print('x')
+        print(x)
+        print('y')
+        print(y)
+
+
+
+        # if os.path.exists('./traffic/Data/figure.jpg'):
+        #     os.remove('./traffic/Data/figure.jpg')
+        # print('save page')
+        # plt.savefig('./traffic/Data/figure.jpg')
+        # plt.close()
+
+    except Exception as e:
+        print(e)
+    finally:
+        db.close()
+
+    fig = figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x, y)
+    canvas = FigureCanvasAgg(fig)
+    response = HttpResponse(content_type='image/png')
+    canvas.print_png(response)
+    plt.close(fig)
+    return response
+
+
