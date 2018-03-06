@@ -26,5 +26,6 @@ urlpatterns = [
     url(r'^points$', views.get_points),
     url(r'^navigate$', views.navigate),
     url(r'^admin/', admin.site.urls),
-    url(r'^edges/', views.get_edges)
+    url(r'^edges/', views.get_edges),
+    url(r'^image$', views.get_image)
 ]
