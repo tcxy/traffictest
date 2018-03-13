@@ -43,7 +43,9 @@
         <form id="analyze_form" method="post">
             {% csrf_token %}
             <label>Week</label>
-            <input name="week" id="week">
+            <select id="weeks">
+
+            </select>
             <label>Day</label>
             <input name="day" id="day">
             <button type="button" onclick="startAnalyze()">Submit</button>
@@ -65,11 +67,38 @@
         var departureMarker;
         var destinationMarker;
         var polylines = Array();
+        var isAnalyzeing = false;
+        var street_id = 0;
 
         /**
          *  Functions for showing dialog
          */
         function openDialog(){
+            $.ajax({
+                url: '/weeks',
+                method: 'get',
+                success: function (data) {
+                    console.log(data);
+                    var data = JSON.parse(data);
+                    var weeks = $('#weeks');
+                    weeks.empty();
+                    // for (var i in week_data) {
+                    //     var week = week_data[i];
+                    //     console.log(week)
+                    //     var optionstring = "<option value='" + week[0] + "'>" + week[0] + "</option>";
+                    //     weeks.append(optionstring);
+                    // }
+                    console.log(data['weeks']);
+                    $.each(data['weeks'], function (index, value) {
+                       console.log(value);
+                       var option = $('<option>').text(value).val(value);
+                       weeks.append(option);
+                    });
+                },
+                error: function (e) {
+                    console.log(e);
+                }
+            });
             document.getElementById('light').style.display='block';
             document.getElementById('fade').style.display='block'
         }
@@ -173,7 +202,8 @@
 
             // Setup the click event listeners
             controlUI.addEventListener('click', function() {
-                openDialog();
+                // openDialog();
+                isAnalyzeing = !isAnalyzeing;
             });
         }
 
@@ -184,9 +214,9 @@
           });
           // console.log('week');
           // console.log();
-          var data = {}
-          if ($('#week').val()) {
-              data['week'] = $('#week').val();
+          var data = {'id': street_id}
+          if ($('#weeks').val()) {
+              data['week'] = $('#weeks').val();
               data['type'] = 'week';
           } else if ($('#day').val()) {
               data['day'] = $('#day').val();
@@ -201,9 +231,11 @@
                   console.log(e);
               },
               success: function(data) {
+                  data = JSON.parse(data);
+                  console.log('Receive Image');
                   var image = $('#image');
-                  image.url = data['url'];
-                  image.hidden = false;
+                  image.attr('src', data['url'])
+                  image.attr('hidden', false);
               }
            });
         }
@@ -287,7 +319,12 @@
                     }
                     polypath.edgeid = n['id'];
                     polypath.addListener('click', function () {
-                        alert(this.edgeid);
+                        // alert(this.edgeid);
+                        console.log(this);
+                        if (isAnalyzeing) {
+                            street_id = this.edgeid;
+                            openDialog();
+                        }
                     });
                     polypath.setMap(map);
                     polypath.points = polyline;

@@ -27,5 +27,8 @@ urlpatterns = [
     url(r'^navigate$', views.navigate),
     url(r'^admin/', admin.site.urls),
     url(r'^edges/', views.get_edges),
-    url(r'^image$', views.get_image)
+    url(r'^image$', views.get_image),
+    url(r'^test$', views.test),
+    url(r'^shortest$', views.shorttest),
+    url(r'^weeks$', views.weeks)
 ]

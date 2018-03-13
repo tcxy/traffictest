@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Shortest path</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/vis.min.css' %}" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+    <style>
+        #testnetwork {
+            width: 70%;
+            height: 400px;
+            border: 1px solid lightgray
+        }
+    </style>
+</head>
+<body>
+
+<div id="testnetwork"></div>
+<div>
+    <button onclick="addNode()">Add node</button>
+</div>
+
+<div>
+    <label>From</label>
+    <input id="from">
+    <label>To</label>
+    <input id="to">
+    <label>Weight</label>
+    <input id="weight">
+    <button onclick="addEdge()">Add Edge</button>
+</div>
+
+<div>
+    <label>From</label>
+    <input id="s_from">
+    <label>To</label>
+    <input id="s_to">
+    <div hidden="hidden">{% csrf_token %}</div>
+    <button onclick="shortest()">Shortest Path</button>
+</div>
+
+<div id="path">
+
+</div>
+
+<script type="text/javascript">
+    var csrftoken = jQuery("[name=csrfmiddlewaretoken").val();
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    var nodes = new vis.DataSet([
+        {id: 1, label: 'Node 1'},
+        {id: 2, label: 'Node 2'},
+        {id: 3, label: 'Node 3'},
+        {id: 4, label: 'Node 4'},
+        {id: 5, label: 'Node 5'}
+    ]);
+    var node_count = 5;
+
+    var edges = new vis.DataSet([
+        {id: 1, from: 1, to: 3, weight: 3, label: '3'},
+        {id: 2, from: 1, to: 2, weight: 4, label: '4'},
+        {id: 3, from: 2, to: 4, weight: 3, label: '3'},
+        {id: 4, from: 2, to: 5, weight: 2, label: '2'}
+    ]);
+    var edge_count = 4;
+
+    var container = document.getElementById('testnetwork');
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+    var options = {};
+    var network = new vis.Network(container, data, options);
+
+    function addNode() {
+        node_count++;
+        nodes.add({id: node_count, label: 'Node ' + node_count});
+    }
+
+    function addEdge() {
+        var from = document.getElementById('from').value;
+        var to = document.getElementById('to').value;
+        var weight = document.getElementById('weight').value;
+        console.log('from ' + from + ' to ' + to + ' weight ' + weight);
+        edge_count++;
+        edges.add({id: edge_count, from: parseInt(from), to: parseInt(to), weight: weight, label: '' + weight});
+    }
+
+    function shortest() {
+        var from = document.getElementById('s_from').value;
+        var to = document.getElementById('s_to').value;
+        var total_edges = [];
+        edges.forEach(function (value) {
+           total_edges.push(value);
+        });
+        console.log(total_edges);
+        $.ajax({
+            url: '/shortest',
+            type: 'post',
+            dataType: 'json',
+            data: {
+                from: from,
+                to: to,
+                edges: JSON.stringify(total_edges)
+            },
+            success: function (data) {
+                console.log(data);
+                var path = document.getElementById('path');
+                var finalpath = data['path'];
+                path.innerText = finalpath.join(',');
+            },
+            error: function (e) {
+                console.log(e);
+            }
+        });
+    }
+
+    function csrfSafeMethod(method) {
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+</script>
+
+
+</body>
+</html>

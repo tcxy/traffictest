@@ -71,7 +71,8 @@ class Graph(object):
             row = int(edge['from_vertice'])
             col = int(edge['to_vertice'])
             self.__matrix[row][col] = float(edge['dis']) / float(edge['speed'])
-            self.__matrix[col][row] = float(edge['dis']) / float(edge['speed'])
+            if edge['isBidirection']:
+                self.__matrix[col][row] = float(edge['dis']) / float(edge['speed'])
             print('From point ' + str(row) + ' to point ' + str(col))
             print('The weight is ' + str(float(edge['dis']) / float(edge['speed'])))
             count += 1
