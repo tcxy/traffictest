@@ -44,10 +44,12 @@
             {% csrf_token %}
             <label>Week</label>
             <select id="weeks">
-
             </select>
             <label>Day</label>
-            <input name="day" id="day">
+            <input name="day" id="day"> <br/>
+            <label>Period of hours:</label>
+            <input name="from" id="from" placeholder="from">
+            <input name="to" id="to" placeholder="to"> <br/>
             <button type="button" onclick="startAnalyze()">Submit</button>
             <button type="button" onclick="closeDialog()">Close</button>
             <img hidden="hidden" id="image">
@@ -222,6 +224,8 @@
               data['day'] = $('#day').val();
               data['type'] = 'day';
           }
+          data['from'] = $('#from').val();
+          data['to'] = $('#to').val();
           console.log(data);
           $.ajax({
               url: '/image',
@@ -234,7 +238,7 @@
                   data = JSON.parse(data);
                   console.log('Receive Image');
                   var image = $('#image');
-                  image.attr('src', data['url'])
+                  image.attr('src', data['url'] + "?t=" + Math.random());
                   image.attr('hidden', false);
               }
            });

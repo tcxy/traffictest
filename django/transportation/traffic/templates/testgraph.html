@@ -18,20 +18,14 @@
 </head>
 <body>
 
-<div id="testnetwork"></div>
 <div>
-    <button onclick="addNode()">Add node</button>
+    <select>
+        <option value="1">Scenario 1</option>
+        <option value="2">Scenario 2</option>
+    </select>
 </div>
 
-<div>
-    <label>From</label>
-    <input id="from">
-    <label>To</label>
-    <input id="to">
-    <label>Weight</label>
-    <input id="weight">
-    <button onclick="addEdge()">Add Edge</button>
-</div>
+<div id="testnetwork"></div>
 
 <div>
     <label>From</label>
@@ -42,8 +36,12 @@
     <button onclick="shortest()">Shortest Path</button>
 </div>
 
-<div id="path">
+<div>
+    <h4>Path with Dijkstra</h4>
+</div>
 
+<div>
+    <h4>Path with Robust Shortest Path</h4>
 </div>
 
 <script type="text/javascript">
@@ -79,20 +77,6 @@
     };
     var options = {};
     var network = new vis.Network(container, data, options);
-
-    function addNode() {
-        node_count++;
-        nodes.add({id: node_count, label: 'Node ' + node_count});
-    }
-
-    function addEdge() {
-        var from = document.getElementById('from').value;
-        var to = document.getElementById('to').value;
-        var weight = document.getElementById('weight').value;
-        console.log('from ' + from + ' to ' + to + ' weight ' + weight);
-        edge_count++;
-        edges.add({id: edge_count, from: parseInt(from), to: parseInt(to), weight: weight, label: '' + weight});
-    }
 
     function shortest() {
         var from = document.getElementById('s_from').value;

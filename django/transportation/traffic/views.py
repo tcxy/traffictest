@@ -309,18 +309,36 @@ def shorttest(request):
 def get_image(request):
     id = int(request.POST.get('id'))
     type = request.POST.get('type')
+    from_h = request.POST.get('from')
+    to_h = request.POST.get('to')
     sql = ''
     data = 0
     if not id:
         id = 1269
-    if type == 'week':
-        data = int(request.POST.get('week'))
-        sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour from traffic
-                WHERE street_id = %d and WEEK(traffic_time) = %d GROUP BY hour''' % (id, data)
-    if type == 'day':
-        data = int(request.POST.get('day'))
-        sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour FROM traffic
-                WHERE strrt_id = %id and WEEK(traffic_time) = %d GROUP BY hour''' % (id, data)
+    # if type == 'week':
+    #     data = int(request.POST.get('week'))
+    #     if not from_h and not to_h:
+    #         sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour from traffic
+    #             WHERE street_id = %d and WEEK(traffic_time) = %d GROUP BY hour''' % (id, data)
+    #     else:
+    #         from_hour = int(from_h)
+    #         to_hour = int(to_h)
+    #         sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour FROM traffic
+    #             WHERE street_id = %d and WEEK(traffic_time) = %d and HOUR(traffic_time) >= %d and HOUR(traffic_time) <= %d
+    #             GROUP BY hour''' % (id, data, from_hour, to_hour)
+    # if type == 'day':
+    #     data = int(request.POST.get('day'))
+    #     if not from_h and not to_h:
+    #         sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour FROM traffic
+    #             WHERE street_id = %id and WEEK(traffic_time) = %d GROUP BY hour''' % (id, data)
+    #     else:
+    #         from_hour = int(from_h)
+    #         to_hour = int(to_h)
+    #         sql = '''SELECT AVG(speed), HOUR(traffic_time) as hour FROM traffic
+    #             WHERE street_id = %d and WEKK(traffic_time) = %d and HOUR(traffic_time) >= %d and HOUR(traffic_time) <= %d
+    #             GROUP BY hour''' % (id, data, from_hour, to_hour)
+    week = int(request.POST.get('week'))
+    sql = '''SELECT speed, HOUR(traffic_time) as hour FROM traffic WHERE street_id = %d and WEEK(traffic_time) = %d''' % (id, week)
     print('id')
     print(id)
     print('data')
@@ -335,9 +353,11 @@ def get_image(request):
         result = cursor.fetchall()
 
         print('plot')
+        count = 0
         for item in result:
-            x.append(item[1])
+            x.append(count)
             y.append(item[0])
+            count = count + 1
         print('x')
         print(x)
         print('y')
